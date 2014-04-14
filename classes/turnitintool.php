@@ -32,23 +32,34 @@ class turnitintool {
 
         $sql =
 <<<SQL
-    SELECT
-        t.id as id,
-        "Turnitin" as type,
-        CONCAT(t.name, " - ", tp.partname) as name,
-        c.shortname as course,
-        tp.dtstart as start,
-        tp.dtdue as end,
-        "--" as activity,
-        COUNT(ue.userid) as enrolled_students
+    SELECT 
+        a.id as id,
+        'Turnitin' as type,
+        a.name as name,
+        a.course as course,
+        a.start as start,
+        a.end as end,
+        a.submissions as activity,
+        COUNT(ue.id) as enrolled_students
     FROM
-        {turnitintool} t
+        (SELECT 
+            t.id as id,
+                CONCAT(t.name, ' - ', tp.partname) as name,
+                t.course as course_id,
+                c.shortname as course,
+                tp.dtstart as start,
+                tp.dtdue as end,
+                COUNT(ts.userid) as submissions
+        FROM
+            {turnitintool} t
+        INNER JOIN {course} c ON c.id = t.course
+        INNER JOIN {turnitintool_parts} tp ON tp.turnitintoolid = t.id
+        LEFT OUTER JOIN {turnitintool_submissions} ts ON ts.turnitintoolid = t.id AND ts.submission_part = tp.id
+        WHERE
+            tp.dtdue > UNIX_TIMESTAMP()
+        GROUP BY t.id , tp.id) a
             INNER JOIN
-        {turnitintool_parts} tp ON tp.turnitintoolid = t.id
-            INNER JOIN
-        {enrol} e ON e.courseid = t.course
-            INNER JOIN
-        {course} c ON c.id = t.course
+        {enrol} e ON e.courseid = a.course_id
             INNER JOIN
         {user_enrolments} ue ON ue.enrolid = e.id
     WHERE
@@ -59,9 +70,8 @@ class turnitintool {
             WHERE
                 shortname = 'student'
                     OR shortname = 'sds_student')
-            AND tp.dtdue > UNIX_TIMESTAMP()
-    GROUP BY t.id , tp.id
-    ORDER BY tp.dtdue ASC , tp.id ASC
+    GROUP BY a.id
+    ORDER BY a.end ASC , a.id ASC
 SQL;
 
         return $DB->get_records_sql($sql, array());
