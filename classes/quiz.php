@@ -15,7 +15,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Turnitin functions for Deadline Report
+ * Quiz functions for Deadline Report
  *
  * @package    report_deadlines
  * @copyright  2014 Jake Blatchford <J.Blatchford@kent.ac.uk>
