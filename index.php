@@ -66,6 +66,13 @@ if (!empty($q_deadlines)) {
     $deadlines = array_merge($deadlines, $q_deadlines);
 }
 
+// assign deadlines
+$a_deadlines = \report_deadlines\assign::get_deadlines();
+
+if (!empty($a_deadlines)) {
+    $deadlines = array_merge($deadlines, $a_deadlines);
+}
+
 // sort deadlines by date
 usort($deadlines, function($a, $b) {
     if ($a->end >= $b->end) {
