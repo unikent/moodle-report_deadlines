@@ -11,4 +11,4 @@
 $string['deadlines'] = 'Deadlines Report';
 $string['plugin'] = 'Plugin';
 $string['pluginname'] = 'Deadlines Report';
-
+$string['cachedef_report_deadlines'] = 'Deadlines Report Data';
