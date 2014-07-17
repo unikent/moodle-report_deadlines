@@ -27,9 +27,11 @@ global $CFG, $OUTPUT, $DB;
 require(dirname(__FILE__).'/../../config.php');
 require_once($CFG->libdir.'/adminlib.php');
 
-// page parameters
+// Page parameters.
 $page    = optional_param('page', 0, PARAM_INT);
-$perpage = optional_param('perpage', 30, PARAM_INT);    // how many per page
+$perpage = optional_param('perpage', 30, PARAM_INT);
+$showpast = optional_param('showpast', 0, PARAM_BOOL);
+$format = optional_param('format', '', PARAM_ALPHA);
 
 $headings = array(
     "Type",
@@ -43,13 +45,21 @@ $headings = array(
 
 admin_externalpage_setup('reportdeadlines', '', null, '', array('pagelayout' => 'report'));
 
-echo $OUTPUT->header();
-echo $OUTPUT->heading(get_string('deadlines', 'report_deadlines'));
+$PAGE->set_title(get_string('pluginname', 'report_deadlines'));
+$PAGE->requires->js_init_call('M.report_deadlines.init', array(), false, array(
+    'name' => 'report_deadlines',
+    'fullpath' => '/report/deadlines/module.js'
+));
 
 $table = new html_table();
 $table->head = $headings;
 
-$table->colclasses = array('leftalign assignment', 'leftalign students_on_assignment', 'leftalign students_with_grades', 'leftalign students_on_course');
+$table->colclasses = array(
+    'leftalign assignment',
+    'leftalign students_on_assignment',
+    'leftalign students_with_grades',
+    'leftalign students_on_course'
+);
 $table->id = 'deadlines';
 $table->attributes['class'] = 'admintable generaltable';
 $table->data = array();
@@ -57,34 +67,35 @@ $table->data = array();
 $deadlines = array();
 
 // MUC - Can we grab from cache?
+$cachekey = 'deadlines_' . $showpast;
 $cache = cache::make('report_deadlines', 'report_deadlines');
-$cache_content = $cache->get('deadlines');
+$content = $cache->get($cachekey);
 
-if ($cache_content !== false) {
-    $deadlines = $cache_content;
+if ($content !== false) {
+    $deadlines = $content;
 } else {
-    // turnitin deadlines
-    $t_deadlines = \report_deadlines\turnitintool::get_deadlines();
+    // Turnitin deadlines.
+    $tdeadlines = \report_deadlines\turnitintool::get_deadlines($showpast);
 
-    if (!empty($t_deadlines)) {
-        $deadlines = array_merge($deadlines, $t_deadlines);
+    if (!empty($tdeadlines)) {
+        $deadlines = array_merge($deadlines, $tdeadlines);
     }
 
-    // quiz deadlines
-    $q_deadlines = \report_deadlines\quiz::get_deadlines();
+    // Quiz deadlines.
+    $qdeadlines = \report_deadlines\quiz::get_deadlines($showpast);
 
-    if (!empty($q_deadlines)) {
-        $deadlines = array_merge($deadlines, $q_deadlines);
+    if (!empty($qdeadlines)) {
+        $deadlines = array_merge($deadlines, $qdeadlines);
     }
 
-    // assign deadlines
-    $a_deadlines = \report_deadlines\assign::get_deadlines();
+    // Assign deadlines.
+    $adeadlines = \report_deadlines\assign::get_deadlines($showpast);
 
-    if (!empty($a_deadlines)) {
-        $deadlines = array_merge($deadlines, $a_deadlines);
+    if (!empty($adeadlines)) {
+        $deadlines = array_merge($deadlines, $adeadlines);
     }
 
-    // sort deadlines by date
+    // Sort deadlines by date.
     usort($deadlines, function($a, $b) {
         if ($a->end >= $b->end) {
             return 1;
@@ -92,19 +103,28 @@ if ($cache_content !== false) {
         return 0;
     });
 
-    // set cache
-    $cache->set('deadlines', $deadlines);
+    // Set cache.
+    $cache->set($cachekey, $deadlines);
 }
 
-$baseurl = new moodle_url('index.php', array('perpage' => $perpage));
-echo $OUTPUT->paging_bar(count($deadlines), $page, $perpage, $baseurl);
+$baseurl = new moodle_url('/report/deadlines/index.php', array(
+    'perpage' => $perpage,
+    'format' => $format
+));
 
-// grab page of data
-$deadlines = array_slice($deadlines, $page*$perpage, $perpage);
+// Grab page of data.
+$deadlines = array_slice($deadlines, $page * $perpage, $perpage);
+
+if ($format == 'csv') {
+    require_once($CFG->libdir . "/csvlib.class.php");
+
+    $export = new csv_export_writer();
+    $export->set_filename('PanoptoReport-');
+    $export->add_data($table->head);
+}
 
 foreach ($deadlines as $data) {
     $row = array();
-    
     $row[] = s($data->type);
     $row[] = s($data->course);
     $row[] = s($data->name);
@@ -114,8 +134,33 @@ foreach ($deadlines as $data) {
     $row[] = s($data->enrolled_students);
 
     $table->data[] = $row;
+
+    if ($format == 'csv') {
+        $export->add_data($row);
+    }
 }
 
+if ($format == 'csv') {
+    $export->download_file();
+}
+
+echo $OUTPUT->header();
+echo $OUTPUT->heading(get_string('deadlines', 'report_deadlines'));
+
+echo \html_writer::checkbox('showpast', true, $showpast, 'Show Past Deadlines?', array(
+    'id' => 'showpastchk'
+));
+
 echo html_writer::table($table);
+
+echo $OUTPUT->paging_bar(count($deadlines), $page, $perpage, $baseurl);
+
+$link = new \moodle_url($baseurl);
+$link->param('perpage', 999999);
+$link->param('format', 'csv');
+$link = \html_writer::tag('a', 'Download as CSV', array(
+    'href' => $link
+));
+echo '<p>'.$link.'</p>';
 
 echo $OUTPUT->footer();
