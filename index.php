@@ -31,6 +31,7 @@ require_once($CFG->libdir.'/adminlib.php');
 $page    = optional_param('page', 0, PARAM_INT);
 $perpage = optional_param('perpage', 30, PARAM_INT);
 $showpast = optional_param('showpast', 0, PARAM_BOOL);
+$format = optional_param('format', '', PARAM_ALPHA);
 
 $headings = array(
     "Type",
@@ -49,9 +50,6 @@ $PAGE->requires->js_init_call('M.report_deadlines.init', array(), false, array(
     'name' => 'report_deadlines',
     'fullpath' => '/report/deadlines/module.js'
 ));
-
-echo $OUTPUT->header();
-echo $OUTPUT->heading(get_string('deadlines', 'report_deadlines'));
 
 $table = new html_table();
 $table->head = $headings;
@@ -109,10 +107,21 @@ if ($content !== false) {
     $cache->set($cachekey, $deadlines);
 }
 
-$baseurl = new moodle_url('index.php', array('perpage' => $perpage));
+$baseurl = new moodle_url('/report/deadlines/index.php', array(
+    'perpage' => $perpage,
+    'format' => $format
+));
 
 // Grab page of data.
 $deadlines = array_slice($deadlines, $page * $perpage, $perpage);
+
+if ($format == 'csv') {
+    require_once($CFG->libdir . "/csvlib.class.php");
+
+    $export = new csv_export_writer();
+    $export->set_filename('PanoptoReport-');
+    $export->add_data($table->head);
+}
 
 foreach ($deadlines as $data) {
     $row = array();
@@ -125,7 +134,18 @@ foreach ($deadlines as $data) {
     $row[] = s($data->enrolled_students);
 
     $table->data[] = $row;
+
+    if ($format == 'csv') {
+        $export->add_data($row);
+    }
 }
+
+if ($format == 'csv') {
+    $export->download_file();
+}
+
+echo $OUTPUT->header();
+echo $OUTPUT->heading(get_string('deadlines', 'report_deadlines'));
 
 echo \html_writer::checkbox('showpast', true, $showpast, 'Show Past Deadlines?', array(
     'id' => 'showpastchk'
@@ -134,5 +154,13 @@ echo \html_writer::checkbox('showpast', true, $showpast, 'Show Past Deadlines?',
 echo html_writer::table($table);
 
 echo $OUTPUT->paging_bar(count($deadlines), $page, $perpage, $baseurl);
+
+$link = new \moodle_url($baseurl);
+$link->param('perpage', 999999);
+$link->param('format', 'csv');
+$link = \html_writer::tag('a', 'Download as CSV', array(
+    'href' => $link
+));
+echo '<p>'.$link.'</p>';
 
 echo $OUTPUT->footer();
