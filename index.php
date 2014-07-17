@@ -27,9 +27,9 @@ global $CFG, $OUTPUT, $DB;
 require(dirname(__FILE__).'/../../config.php');
 require_once($CFG->libdir.'/adminlib.php');
 
-// page parameters
+// Page parameters.
 $page    = optional_param('page', 0, PARAM_INT);
-$perpage = optional_param('perpage', 30, PARAM_INT);    // how many per page
+$perpage = optional_param('perpage', 30, PARAM_INT);
 
 $headings = array(
     "Type",
@@ -49,7 +49,12 @@ echo $OUTPUT->heading(get_string('deadlines', 'report_deadlines'));
 $table = new html_table();
 $table->head = $headings;
 
-$table->colclasses = array('leftalign assignment', 'leftalign students_on_assignment', 'leftalign students_with_grades', 'leftalign students_on_course');
+$table->colclasses = array(
+    'leftalign assignment',
+    'leftalign students_on_assignment',
+    'leftalign students_with_grades',
+    'leftalign students_on_course'
+);
 $table->id = 'deadlines';
 $table->attributes['class'] = 'admintable generaltable';
 $table->data = array();
@@ -58,33 +63,33 @@ $deadlines = array();
 
 // MUC - Can we grab from cache?
 $cache = cache::make('report_deadlines', 'report_deadlines');
-$cache_content = $cache->get('deadlines');
+$content = $cache->get('deadlines');
 
-if ($cache_content !== false) {
-    $deadlines = $cache_content;
+if ($content !== false) {
+    $deadlines = $content;
 } else {
-    // turnitin deadlines
-    $t_deadlines = \report_deadlines\turnitintool::get_deadlines();
+    // Turnitin deadlines.
+    $tdeadlines = \report_deadlines\turnitintool::get_deadlines();
 
-    if (!empty($t_deadlines)) {
-        $deadlines = array_merge($deadlines, $t_deadlines);
+    if (!empty($tdeadlines)) {
+        $deadlines = array_merge($deadlines, $tdeadlines);
     }
 
-    // quiz deadlines
-    $q_deadlines = \report_deadlines\quiz::get_deadlines();
+    // Quiz deadlines.
+    $qdeadlines = \report_deadlines\quiz::get_deadlines();
 
-    if (!empty($q_deadlines)) {
-        $deadlines = array_merge($deadlines, $q_deadlines);
+    if (!empty($qdeadlines)) {
+        $deadlines = array_merge($deadlines, $qdeadlines);
     }
 
-    // assign deadlines
-    $a_deadlines = \report_deadlines\assign::get_deadlines();
+    // Assign deadlines.
+    $adeadlines = \report_deadlines\assign::get_deadlines();
 
-    if (!empty($a_deadlines)) {
-        $deadlines = array_merge($deadlines, $a_deadlines);
+    if (!empty($adeadlines)) {
+        $deadlines = array_merge($deadlines, $adeadlines);
     }
 
-    // sort deadlines by date
+    // Sort deadlines by date.
     usort($deadlines, function($a, $b) {
         if ($a->end >= $b->end) {
             return 1;
@@ -92,19 +97,17 @@ if ($cache_content !== false) {
         return 0;
     });
 
-    // set cache
+    // Set cache.
     $cache->set('deadlines', $deadlines);
 }
 
 $baseurl = new moodle_url('index.php', array('perpage' => $perpage));
-echo $OUTPUT->paging_bar(count($deadlines), $page, $perpage, $baseurl);
 
-// grab page of data
-$deadlines = array_slice($deadlines, $page*$perpage, $perpage);
+// Grab page of data.
+$deadlines = array_slice($deadlines, $page * $perpage, $perpage);
 
 foreach ($deadlines as $data) {
     $row = array();
-    
     $row[] = s($data->type);
     $row[] = s($data->course);
     $row[] = s($data->name);
@@ -117,5 +120,7 @@ foreach ($deadlines as $data) {
 }
 
 echo html_writer::table($table);
+
+echo $OUTPUT->paging_bar(count($deadlines), $page, $perpage, $baseurl);
 
 echo $OUTPUT->footer();
