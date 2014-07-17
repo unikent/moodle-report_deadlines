@@ -27,8 +27,10 @@ namespace report_deadlines;
 defined('MOODLE_INTERNAL') || die();
 
 class turnitintool {
-    public static function get_deadlines() {
+    public static function get_deadlines($showpast) {
         global $DB;
+
+        $where = $showpast ? '' : 'WHERE tp.dtdue > unix_timestamp()';
 
         $sql =
 <<<SQL
@@ -55,8 +57,7 @@ class turnitintool {
         INNER JOIN {course} c ON c.id = t.course
         INNER JOIN {turnitintool_parts} tp ON tp.turnitintoolid = t.id
         LEFT OUTER JOIN {turnitintool_submissions} ts ON ts.turnitintoolid = t.id AND ts.submission_part = tp.id
-        WHERE
-            tp.dtdue > UNIX_TIMESTAMP()
+        $where
         GROUP BY t.id , tp.id) a
             INNER JOIN
         {enrol} e ON e.courseid = a.course_id

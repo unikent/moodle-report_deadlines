@@ -27,12 +27,14 @@ namespace report_deadlines;
 defined('MOODLE_INTERNAL') || die();
 
 class assign {
-    public static function get_deadlines() {
+    public static function get_deadlines($showpast) {
         global $DB;
+
+        $where = $showpast ? '' : 'WHERE duedate > unix_timestamp()';
 
         $sql =
 <<<SQL
-    SELECT 
+    SELECT
         b.assign_id as id,
         'Assign' as type,
         b.name as name,
@@ -42,7 +44,7 @@ class assign {
         b.submissions as activity,
         COUNT(ue.id) as enrolled_students
     FROM
-        (SELECT 
+        (SELECT
             a.id as assign_id,
                 a.course as course_id,
                 a.name as name,
@@ -54,15 +56,14 @@ class assign {
             {assign} a
         INNER JOIN {course} c ON c.id = a.course
         LEFT OUTER JOIN {assign_submission} ass ON ass.assignment = a.id
-        WHERE
-            duedate > unix_timestamp()
+        $where
         GROUP BY a.id) b
             INNER JOIN
         {enrol} e ON e.courseid = b.course_id
             INNER JOIN
         {user_enrolments} ue ON ue.enrolid = e.id
     WHERE
-        e.roleid IN (SELECT 
+        e.roleid IN (SELECT
                 id
             FROM
                 {role}

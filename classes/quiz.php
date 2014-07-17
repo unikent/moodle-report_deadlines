@@ -27,8 +27,10 @@ namespace report_deadlines;
 defined('MOODLE_INTERNAL') || die();
 
 class quiz {
-    public static function get_deadlines() {
+    public static function get_deadlines($showpast) {
         global $DB;
+
+        $where = $showpast ? '' : 'WHERE timeclose > unix_timestamp()';
 
         $sql =
 <<<SQL
@@ -54,8 +56,7 @@ class quiz {
             {quiz} q
         INNER JOIN {course} c ON c.id = q.course
         LEFT OUTER JOIN {quiz_attempts} a ON a.quiz = q.id
-        WHERE
-            timeclose > unix_timestamp()
+        $where
         GROUP BY q.id
         ORDER BY time_close ASC) a
             INNER JOIN

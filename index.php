@@ -30,6 +30,7 @@ require_once($CFG->libdir.'/adminlib.php');
 // Page parameters.
 $page    = optional_param('page', 0, PARAM_INT);
 $perpage = optional_param('perpage', 30, PARAM_INT);
+$showpast = optional_param('showpast', 0, PARAM_BOOL);
 
 $headings = array(
     "Type",
@@ -42,6 +43,12 @@ $headings = array(
 );
 
 admin_externalpage_setup('reportdeadlines', '', null, '', array('pagelayout' => 'report'));
+
+$PAGE->set_title(get_string('pluginname', 'report_deadlines'));
+$PAGE->requires->js_init_call('M.report_deadlines.init', array(), false, array(
+    'name' => 'report_deadlines',
+    'fullpath' => '/report/deadlines/module.js'
+));
 
 echo $OUTPUT->header();
 echo $OUTPUT->heading(get_string('deadlines', 'report_deadlines'));
@@ -62,28 +69,29 @@ $table->data = array();
 $deadlines = array();
 
 // MUC - Can we grab from cache?
+$cachekey = 'deadlines_' . $showpast;
 $cache = cache::make('report_deadlines', 'report_deadlines');
-$content = $cache->get('deadlines');
+$content = $cache->get($cachekey);
 
 if ($content !== false) {
     $deadlines = $content;
 } else {
     // Turnitin deadlines.
-    $tdeadlines = \report_deadlines\turnitintool::get_deadlines();
+    $tdeadlines = \report_deadlines\turnitintool::get_deadlines($showpast);
 
     if (!empty($tdeadlines)) {
         $deadlines = array_merge($deadlines, $tdeadlines);
     }
 
     // Quiz deadlines.
-    $qdeadlines = \report_deadlines\quiz::get_deadlines();
+    $qdeadlines = \report_deadlines\quiz::get_deadlines($showpast);
 
     if (!empty($qdeadlines)) {
         $deadlines = array_merge($deadlines, $qdeadlines);
     }
 
     // Assign deadlines.
-    $adeadlines = \report_deadlines\assign::get_deadlines();
+    $adeadlines = \report_deadlines\assign::get_deadlines($showpast);
 
     if (!empty($adeadlines)) {
         $deadlines = array_merge($deadlines, $adeadlines);
@@ -98,7 +106,7 @@ if ($content !== false) {
     });
 
     // Set cache.
-    $cache->set('deadlines', $deadlines);
+    $cache->set($cachekey, $deadlines);
 }
 
 $baseurl = new moodle_url('index.php', array('perpage' => $perpage));
@@ -118,6 +126,10 @@ foreach ($deadlines as $data) {
 
     $table->data[] = $row;
 }
+
+echo \html_writer::checkbox('showpast', true, $showpast, 'Show Past Deadlines?', array(
+    'id' => 'showpastchk'
+));
 
 echo html_writer::table($table);
 
