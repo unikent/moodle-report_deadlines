@@ -35,7 +35,7 @@ class turnitintooltwo {
         $sql = <<<SQL
     SELECT
         a.id as id,
-        'TurnitinTwo' as type,
+        'Turnitin 2' as type,
         a.name as name,
         a.course as course,
         a.start as start,

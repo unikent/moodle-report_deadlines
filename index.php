@@ -79,24 +79,28 @@ if ($content !== false) {
     if (!empty($tdeadlines)) {
         $deadlines = array_merge($deadlines, $tdeadlines);
     }
+    unset($tdeadlines);
 
     // TurnitinTwo deadlines.
     $ttdeadlines = \report_deadlines\turnitintooltwo::get_deadlines($showpast);
     if (!empty($ttdeadlines)) {
         $deadlines = array_merge($deadlines, $ttdeadlines);
     }
+    unset($ttdeadlines);
 
     // Quiz deadlines.
     $qdeadlines = \report_deadlines\quiz::get_deadlines($showpast);
     if (!empty($qdeadlines)) {
         $deadlines = array_merge($deadlines, $qdeadlines);
     }
+    unset($qdeadlines);
 
     // Assign deadlines.
     $adeadlines = \report_deadlines\assign::get_deadlines($showpast);
     if (!empty($adeadlines)) {
         $deadlines = array_merge($deadlines, $adeadlines);
     }
+    unset($adeadlines);
 
     // Sort deadlines by date.
     usort($deadlines, function($a, $b) {
