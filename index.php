@@ -76,21 +76,24 @@ if ($content !== false) {
 } else {
     // Turnitin deadlines.
     $tdeadlines = \report_deadlines\turnitintool::get_deadlines($showpast);
-
     if (!empty($tdeadlines)) {
         $deadlines = array_merge($deadlines, $tdeadlines);
     }
 
+    // TurnitinTwo deadlines.
+    $ttdeadlines = \report_deadlines\turnitintooltwo::get_deadlines($showpast);
+    if (!empty($ttdeadlines)) {
+        $deadlines = array_merge($deadlines, $ttdeadlines);
+    }
+
     // Quiz deadlines.
     $qdeadlines = \report_deadlines\quiz::get_deadlines($showpast);
-
     if (!empty($qdeadlines)) {
         $deadlines = array_merge($deadlines, $qdeadlines);
     }
 
     // Assign deadlines.
     $adeadlines = \report_deadlines\assign::get_deadlines($showpast);
-
     if (!empty($adeadlines)) {
         $deadlines = array_merge($deadlines, $adeadlines);
     }
