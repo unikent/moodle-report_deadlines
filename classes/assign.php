@@ -30,7 +30,7 @@ class assign {
     public static function get_deadlines($showpast) {
         global $DB;
 
-        $where = $showpast ? '' : 'WHERE duedate > unix_timestamp()';
+        $where = $showpast ? '' : 'WHERE a.duedate > unix_timestamp()';
 
         $sql =
 <<<SQL

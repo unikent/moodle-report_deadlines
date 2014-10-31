@@ -30,7 +30,7 @@ class quiz {
     public static function get_deadlines($showpast) {
         global $DB;
 
-        $where = $showpast ? '' : 'WHERE timeclose > unix_timestamp()';
+        $where = $showpast ? '' : 'WHERE q.timeclose > unix_timestamp()';
 
         $sql = <<<SQL
     SELECT
