@@ -61,7 +61,7 @@ class assign {
             GROUP BY a.id
         ) b
     INNER JOIN {context} ctx
-        ON ctx.instanceid = a.course_id
+        ON ctx.instanceid = b.course_id
         AND ctx.contextlevel=:contextlevel
     INNER JOIN {role_assignments} ra
         ON ra.contextid = ctx.id
