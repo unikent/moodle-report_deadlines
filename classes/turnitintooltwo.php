@@ -41,7 +41,7 @@ class turnitintooltwo {
         a.start as start,
         a.end as end,
         a.submissions as activity,
-        COUNT(ue.id) as enrolled_students
+        COUNT(ra.id) as enrolled_students
     FROM
         (SELECT
             t.id as id,
@@ -51,29 +51,28 @@ class turnitintooltwo {
                 tp.dtstart as start,
                 tp.dtdue as end,
                 COUNT(ts.userid) as submissions
-        FROM
-            {turnitintooltwo} t
-        INNER JOIN {course} c ON c.id = t.course
-        INNER JOIN {turnitintooltwo_parts} tp ON tp.turnitintooltwoid = t.id
-        LEFT OUTER JOIN {turnitintooltwo_submissions} ts ON ts.turnitintooltwoid = t.id AND ts.submission_part = tp.id
-        $where
-        GROUP BY t.id , tp.id) a
-            INNER JOIN
-        {enrol} e ON e.courseid = a.course_id
-            INNER JOIN
-        {user_enrolments} ue ON ue.enrolid = e.id
-    WHERE
-        e.roleid IN (SELECT
-                id
             FROM
-                {role}
-            WHERE
-                shortname = 'student'
-                    OR shortname = 'sds_student')
+                {turnitintooltwo} t
+            INNER JOIN {course} c ON c.id = t.course
+            INNER JOIN {turnitintooltwo_parts} tp ON tp.turnitintooltwoid = t.id
+            LEFT OUTER JOIN {turnitintooltwo_submissions} ts ON ts.turnitintooltwoid = t.id AND ts.submission_part = tp.id
+            $where
+            GROUP BY t.id , tp.id
+        ) a
+    INNER JOIN {context} ctx
+        ON ctx.instanceid = a.course_id
+        AND ctx.contextlevel=:contextlevel
+    INNER JOIN {role_assignments} ra
+        ON ra.contextid = ctx.id
+    INNER JOIN {role} r
+        ON r.id=ra.roleid
+    WHERE
+        r.shortname IN ("student", "sds_student")
     GROUP BY a.id
-    ORDER BY a.end ASC , a.id ASC
 SQL;
 
-        return $DB->get_records_sql($sql, array());
+        return $DB->get_records_sql($sql, array(
+            'contextlevel' => \CONTEXT_COURSE
+        ));
     }
 }

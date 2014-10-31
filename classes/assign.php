@@ -42,38 +42,39 @@ class assign {
         b.start as start,
         b.end as end,
         b.submissions as activity,
-        COUNT(ue.id) as enrolled_students
+        COUNT(ra.id) as enrolled_students
     FROM
-        (SELECT
-            a.id as assign_id,
+        (
+            SELECT
+                a.id as assign_id,
                 a.course as course_id,
                 a.name as name,
                 a.allowsubmissionsfromdate as start,
                 a.duedate as end,
                 c.shortname as course,
                 COUNT(ass.userid) as submissions
-        FROM
-            {assign} a
-        INNER JOIN {course} c ON c.id = a.course
-        LEFT OUTER JOIN {assign_submission} ass ON ass.assignment = a.id
-        $where
-        GROUP BY a.id) b
-            INNER JOIN
-        {enrol} e ON e.courseid = b.course_id
-            INNER JOIN
-        {user_enrolments} ue ON ue.enrolid = e.id
-    WHERE
-        e.roleid IN (SELECT
-                id
             FROM
-                {role}
-            WHERE
-                shortname = 'student'
-                    OR shortname = 'sds_student')
+                {assign} a
+            INNER JOIN {course} c ON c.id = a.course
+            LEFT OUTER JOIN {assign_submission} ass ON ass.assignment = a.id
+            $where
+            GROUP BY a.id
+        ) b
+    INNER JOIN {context} ctx
+        ON ctx.instanceid = a.course_id
+        AND ctx.contextlevel=:contextlevel
+    INNER JOIN {role_assignments} ra
+        ON ra.contextid = ctx.id
+    INNER JOIN {role} r
+        ON r.id=ra.roleid
+    WHERE
+        r.shortname IN ("student", "sds_student")
     GROUP BY b.assign_id
     ORDER BY b.end ASC, b.assign_id ASC
 SQL;
 
-        return $DB->get_records_sql($sql, array());
+        return $DB->get_records_sql($sql, array(
+            'contextlevel' => \CONTEXT_COURSE
+        ));
     }
 }
