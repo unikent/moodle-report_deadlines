@@ -70,7 +70,6 @@ class assign {
     WHERE
         r.shortname IN ("student", "sds_student")
     GROUP BY b.assign_id
-    ORDER BY b.end ASC, b.assign_id ASC
 SQL;
 
         return $DB->get_records_sql($sql, array(
