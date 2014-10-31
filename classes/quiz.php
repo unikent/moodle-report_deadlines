@@ -47,7 +47,7 @@ class quiz {
             SELECT
                 c.id as course_id,
                 c.shortname as course_short_name,
-                q.name as quiz_id,
+                q.id as quiz_id,
                 q.name as quiz_name,
                 q.timeopen as time_open,
                 q.timeclose as time_close,
