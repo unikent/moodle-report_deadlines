@@ -126,7 +126,7 @@ if ($format == 'csv') {
     require_once($CFG->libdir . "/csvlib.class.php");
 
     $export = new csv_export_writer();
-    $export->set_filename('PanoptoReport-');
+    $export->set_filename('Deadlines-Report');
     $export->add_data($table->head);
 }
 
