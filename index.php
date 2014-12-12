@@ -119,9 +119,6 @@ $baseurl = new moodle_url('/report/deadlines/index.php', array(
     'format' => $format
 ));
 
-// Grab page of data.
-$deadlines = array_slice($deadlines, $page * $perpage, $perpage);
-
 if ($format == 'csv') {
     require_once($CFG->libdir . "/csvlib.class.php");
 
@@ -130,7 +127,10 @@ if ($format == 'csv') {
     $export->add_data($table->head);
 }
 
-foreach ($deadlines as $data) {
+// Grab page of data.
+$deadlineset = array_slice($deadlines, $page * $perpage, $perpage);
+
+foreach ($deadlineset as $data) {
     $row = array();
     $row[] = s($data->type);
     $row[] = s($data->course);
