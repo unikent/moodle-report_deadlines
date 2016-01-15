@@ -139,14 +139,15 @@ if($format=="graph") {
     $graphchartdata = array();
     foreach($timesummary as $time => $g) {
         $timestring = "Date(" . date("Y", $time) . "," . (date("m", $time)-1) . "," . date("d", $time) . "," . date("G", $time) . "," . date("i", $time) .")";
-        $graphchartdata[] = array($timestring, $g["activity"], $g["enrolled_students"]);
+        // because graph is stacked subtract activity from enrolled_students
+        $graphchartdata[] = array($timestring, $g["activity"], $g["enrolled_students"]-$g["activity"]);
     }
 
     // Add columns onto array
     $columns = array(
         array("type" => "datetime", "label" => "Date"),
-        array("type" => "number", "label" => "Activity"),
-        array("type" => "number", "label" => "Students on modules")
+        array("type" => "number", "label" => "Actions"),
+        array("type" => "number", "label" => "Students without actions")
     );
     array_unshift($graphchartdata, $columns);
 
