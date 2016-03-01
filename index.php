@@ -119,6 +119,41 @@ $baseurl = new moodle_url('/report/deadlines/index.php', array(
     'format' => $format
 ));
 
+if($format=="graph") {
+    // Grab 200 submissions
+    $graphdata = array_slice($deadlines, 0, 200);
+
+    $timesummary = array();
+    foreach ($graphdata as $data) {
+        // round date to hour
+        $time = $data->end - ($data->end % 3600);
+
+        if(!isset($timesummary[$time])) {
+            $timesummary[$time] = array("activity" => $data->activity, "enrolled_students" => $data->enrolled_students);
+        } else {
+            $timesummary[$time]["activity"] += $data->activity;
+            $timesummary[$time]["enrolled_students"] += $data->enrolled_students;
+        }
+    }
+
+    $graphchartdata = array();
+    foreach($timesummary as $time => $g) {
+        $timestring = "Date(" . date("Y", $time) . "," . (date("m", $time)-1) . "," . date("d", $time) . "," . date("G", $time) . "," . date("i", $time) .")";
+        // because graph is stacked subtract activity from enrolled_students
+        $graphchartdata[] = array($timestring, $g["activity"], $g["enrolled_students"]-$g["activity"]);
+    }
+
+    // Add columns onto array
+    $columns = array(
+        array("type" => "datetime", "label" => "Date"),
+        array("type" => "number", "label" => "Actions"),
+        array("type" => "number", "label" => "Students without actions")
+    );
+    array_unshift($graphchartdata, $columns);
+
+    $graph_json = json_encode($graphchartdata);
+}
+
 if ($format == 'csv') {
     require_once($CFG->libdir . "/csvlib.class.php");
 
@@ -157,6 +192,39 @@ echo $OUTPUT->heading(get_string('deadlines', 'report_deadlines'));
 echo \html_writer::checkbox('showpast', true, $showpast, 'Show Past Deadlines?', array(
     'id' => 'showpastchk'
 ));
+
+$link = new \moodle_url($baseurl);
+$link->param('format', 'graph');
+$link = \html_writer::tag('a', 'Show Deadline Graph', array(
+    'href' => $link
+));
+echo '<p>'.$link.'</p>';
+
+if ($format == 'graph') {
+    echo "<script>deadline_report_data = {$timesummary}</script>";
+    echo <<<CHARTJS
+    <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+    <script type="text/javascript">
+      google.charts.load('current', {'packages':['corechart']});
+      google.charts.setOnLoadCallback(drawChart);
+      function drawChart() {
+        var data = google.visualization.arrayToDataTable(deadline_report_data);
+
+        var options = {
+          title: 'Deadline Report',
+          width: '900px',
+          legend: {position: 'bottom'},
+          hAxis: {title: 'Date', format: 'EEE d HH:mm'},
+          isStacked: 'true'
+        };
+
+        var chart = new google.visualization.ColumnChart(document.getElementById('chart_div'));
+        chart.draw(data, options);
+      }
+    </script>
+CHARTJS;
+    echo '<div id="chart_div" style="width: 900px; height: 500px;"></div>';
+}
 
 echo html_writer::table($table);
 
